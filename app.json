@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Arena",
+    "slug": "arena-campeonatos",
+    "scheme": "arena",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.squad.arena"
+    },
+    "android": {
+      "package": "com.squad.arena",
+      "permissions": [
+        "CAMERA",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permita que o Arena leia os QR Codes de inscrição.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-notifications",
+      "expo-font",
+      "expo-sharing",
+      "expo-status-bar"
+    ]
+  }
+}
