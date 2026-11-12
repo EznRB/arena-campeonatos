@@ -53,3 +53,4 @@ dist-redesign/
 
 supabase/.temp/
 .neon
+/dist-native/

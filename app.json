@@ -22,7 +22,12 @@
       "output": "single"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "asyncRoutes": false
+        }
+      ],
       [
         "expo-camera",
         {

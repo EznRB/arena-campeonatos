@@ -2,6 +2,8 @@ const { chromium } = require("playwright-core");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const base = process.env.BASE_URL || "http://127.0.0.1:4173";
+const offline = process.env.OFFLINE === "1";
 
 (async () => {
   const executablePath =
@@ -18,9 +20,10 @@ const path = require("node:path");
   const shots = path.resolve(__dirname, "../docs/images");
   fs.mkdirSync(shots, { recursive: true });
   const shot = (name) =>
-    page.screenshot({ path: path.join(shots, name + ".png"), fullPage: true });
+    process.env.CAPTURE_SCREENSHOTS === "0" ? Promise.resolve() : page.screenshot({ path: path.join(shots, name + ".png"), fullPage: true });
   try {
-    await page.goto("http://127.0.0.1:4173", { waitUntil: "networkidle" });
+    await page.goto(base, { waitUntil: "networkidle" });
+    if (offline) await page.context().setOffline(true);
     await page
       .getByRole("button", { name: "+ Criar campeonato", exact: true })
       .click();
@@ -98,9 +101,10 @@ const path = require("node:path");
     await page.goBack();
     await page.getByText("ARENA · CAMPEÃO", { exact: true }).waitFor();
     await shot("06-campeao");
+    if (offline) await page.context().setOffline(false);
     await page.reload({ waitUntil: "networkidle" });
     await page.getByText("ARENA · CAMPEÃO", { exact: true }).waitFor();
-    await page.goto("http://127.0.0.1:4173", { waitUntil: "networkidle" });
+    await page.goto(base, { waitUntil: "networkidle" });
     await page
       .getByRole("button", { name: "+ Criar campeonato", exact: true })
       .waitFor();
@@ -114,7 +118,7 @@ const path = require("node:path");
     await page.evaluate(() =>
       localStorage.setItem("@arena/tournaments/v1", "{broken"),
     );
-    await page.goto("http://127.0.0.1:4173", { waitUntil: "networkidle" });
+    await page.goto(base, { waitUntil: "networkidle" });
     await page
       .getByText("Seus dados estão preservados", { exact: true })
       .waitFor();
@@ -140,7 +144,8 @@ const path = require("node:path");
         persistedAfterReload: true,
         corruptionPreservedAndRecovered: true,
         runtimeErrors: errors.length,
-        screenshots: 7,
+        screenshots: process.env.CAPTURE_SCREENSHOTS === "0" ? 0 : 7,
+        offlineTournamentCompleted: offline,
       }),
     );
   } catch (error) {
