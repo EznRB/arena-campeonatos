@@ -5,8 +5,8 @@
   "dependencies": {
     "@expo-google-fonts/barlow-condensed": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
+    "@neondatabase/serverless": "1.2.0",
     "@react-native-async-storage/async-storage": "2.2.0",
-    "@supabase/supabase-js": "2.119.0",
     "expo": "~58.0.25",
     "expo-camera": "~58.0.14",
     "expo-constants": "~58.0.15",
@@ -16,6 +16,7 @@
     "expo-linking": "~58.0.17",
     "expo-notifications": "~58.1.9",
     "expo-router": "~58.0.31",
+    "expo-secure-store": "~58.0.3",
     "expo-sharing": "~58.0.23",
     "expo-status-bar": "~58.0.5",
     "lucide-react-native": "^1.72.0",
@@ -26,7 +27,6 @@
     "react-native-safe-area-context": "~5.11.1",
     "react-native-screens": "~4.30.1",
     "react-native-svg": "15.16.0",
-    "react-native-url-polyfill": "4.0.0",
     "react-native-view-shot": "6.1.1",
     "react-native-web": "^0.21.4"
   },
@@ -35,16 +35,17 @@
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
     "playwright-core": "^1.65.0",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@vercel/node": "30.0.0"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
-    "lint": "eslint src",
+    "lint": "eslint src server api",
     "preview": "node scripts/preview.cjs",
     "test:e2e": "node scripts/e2e.cjs"
   },
