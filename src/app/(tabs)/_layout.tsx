@@ -76,6 +76,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="cloud" options={{ title: 'Conta e backup', tabBarLabel: 'Conta', tabBarIcon: ({ color }) => <Icon name="shield" color={typeof color === 'string' ? color : colors.muted} size={21} /> }} />
     </Tabs>
   );
 }

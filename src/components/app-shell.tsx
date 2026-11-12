@@ -13,11 +13,12 @@ import { Icon, type IconName } from "./icon";
 const accent = "#FF8055";
 const nav: {
   label: string;
-  path: "/" | "/history" | "/about";
+  path: "/" | "/history" | "/about" | "/cloud";
   icon: IconName;
 }[] = [
   { label: "Visão geral", path: "/", icon: "dashboard" },
   { label: "Hall da fama", path: "/history", icon: "trophy" },
+  { label: "Conta e backup", path: "/cloud", icon: "shield" },
   { label: "Manual da arena", path: "/about", icon: "help" },
 ];
 export function AppShell({ children }: { children: ReactNode }) {
@@ -25,13 +26,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const desktop = Platform.OS === "web" && width >= 1000;
   if (!desktop) return children;
-  const root = ["/", "/history", "/about"].includes(pathname);
+  const root = ["/", "/history", "/about", "/cloud"].includes(pathname);
   const title =
     pathname === "/history"
       ? "Hall da fama"
       : pathname === "/about"
         ? "Manual da arena"
-        : pathname === "/create"
+        : pathname === "/cloud"
+          ? "Conta e backup"
+          : pathname === "/create"
           ? "Novo campeonato"
           : pathname === "/"
             ? "Visão geral"
@@ -56,7 +59,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {nav.map((item) => {
           const active =
             item.path === "/"
-              ? !["/history", "/about"].includes(pathname)
+              ? !["/history", "/about", "/cloud"].includes(pathname)
               : pathname === item.path;
           return (
             <Pressable

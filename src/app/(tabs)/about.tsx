@@ -44,10 +44,10 @@ export default function About() {
       <Card>
         <Text style={styles.heading}>Seus dados ficam com você</Text>
         <Text style={styles.subtitle}>
-          O Arena funciona no aparelho do organizador, sem conta ou servidor.
-          Não sincroniza dispositivos. Desinstalar o app ou limpar seus dados
-          remove os campeonatos. No navegador, os dados ficam no armazenamento
-          desse navegador.
+          O Arena funciona offline no aparelho do organizador. Em Conta e backup,
+          quando o serviço estiver configurado, você pode criar uma conta e salvar
+          uma cópia online manualmente. Desinstalar o app ou limpar o navegador
+          remove os dados locais; restaure uma cópia salva para recuperá-los.
         </Text>
         <Text style={styles.small}>
           Câmera, lembretes e vibração dependem das permissões e do suporte do

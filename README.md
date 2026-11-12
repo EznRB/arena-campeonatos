@@ -4,6 +4,8 @@
 
 Repositório: [EznRB/arena-campeonatos](https://github.com/EznRB/arena-campeonatos).
 
+Aplicação publicada: [arena-campeonatos.vercel.app](https://arena-campeonatos.vercel.app).
+
 Uma pessoa organiza o torneio no próprio aparelho: cadastra participantes, confirma presenças, sorteia confrontos e registra resultados até o campeão. O fluxo principal funciona sem internet e sem conta.
 
 ## Galeria
@@ -158,9 +160,9 @@ As versões exatas estão em [package-lock.json](package-lock.json); as declarad
 
 ## Evidências e limites
 
-Consulte [VERIFICACAO.md](docs/VERIFICACAO.md) para resultados executados, limitações e avisos de dependências. O CI preparado em `.github/workflows/ci.yml` só será executado no GitHub após publicação; não é apresentado como aprovado remotamente.
+Consulte [VERIFICACAO.md](docs/VERIFICACAO.md) para resultados executados, limitações e avisos de dependências. O workflow `.github/workflows/ci.yml` executa as verificações a cada push; consulte o resultado remoto na aba Actions do repositório.
 
-Os dados ficam neste dispositivo/navegador. Desinstalar, limpar dados do aplicativo ou armazenamento do navegador remove os campeonatos. Não há backup ou sincronização automática. Dados corrompidos não são substituídos silenciosamente por uma lista vazia: a edição fica bloqueada e o conteúdo original é preservado.
+Os dados ficam neste dispositivo/navegador. Desinstalar, limpar dados do aplicativo ou armazenamento do navegador remove os campeonatos. O backup online é manual e opcional; depende da configuração Supabase descrita abaixo. Não há sincronização automática. Dados corrompidos não são substituídos silenciosamente por uma lista vazia: a edição fica bloqueada e o conteúdo original é preservado.
 
 ## Entrega acadêmica e equipe
 
@@ -182,10 +184,30 @@ Adapte as linhas à composição real do grupo. IA foi usada como apoio à imple
 
 ### GitHub
 
-Publique em repositório do grupo, conceda acesso ao professor e confira o `.gitignore`. O projeto não inclui histórico fictício de contribuição. Cada pessoa deve realizar e registrar seu trabalho com autoria própria. Não commitar `node_modules`, `.expo`, logs, segredos ou bundles gerados.
+Publicado em `EznRB/arena-campeonatos`, com deploy na Vercel conectado ao GitHub. Conceda o acesso necessário ao professor e confira o `.gitignore`. O projeto não inclui histórico fictício de contribuição. Cada pessoa deve realizar e registrar seu trabalho com autoria própria. Não commitar `node_modules`, `.expo`, logs, segredos ou bundles gerados.
 
 ## Skills e referências de desenvolvimento
 
 Skills instaladas em `.agents/skills`: Caveman, Ponytail, Expo Router e Expo UI. Foram aplicadas comunicação concisa, redução de abstrações e orientação de navegação; Expo UI foi avaliada, sem necessidade de adicionar seu runtime para os componentes usados. Não foram instalados proxies, hooks globais ou compressão automática de instruções. Não há porcentagem de economia de tokens comprovada.
 
 Fontes: [Expo](https://github.com/expo/expo), [Expo Skills](https://github.com/expo/skills), [Caveman](https://github.com/JuliusBrussee/caveman), [Ponytail](https://github.com/DietrichGebert/ponytail) e [Brackets Manager](https://github.com/Drarig29/brackets-manager.js). O último foi avaliado como referência; o motor restrito de eliminação simples foi escrito neste projeto e testado, sem incorporar visualizadores web incompatíveis com React Native.
+
+
+## Conta e backup online
+
+A tela **Conta e backup** permite cadastro por e-mail/senha, entrada, envio e restauração de uma cópia dos torneios. O fluxo local permanece disponível sem conta. Não há sincronização automática nem combinação de listas. Restaurar exige confirmação, substitui os torneios locais e não transfere notificações de outro aparelho.
+
+**Provisionamento pendente:** a criação do projeto Supabase aguarda a escolha da organização pelo proprietário. A interface informa essa condição enquanto as variáveis estiverem ausentes. A migração está preparada, mas ainda não foi aplicada a um banco remoto; autenticação e backup reais ainda precisam de validação após o provisionamento.
+
+Configuração:
+
+1. Criar um projeto Supabase exclusivo para Arena na organização autorizada.
+2. Aplicar `supabase/migrations/20261112171550_arena_cloud_backups.sql`. A tabela possui RLS: cada usuário autenticado pode acessar apenas sua própria cópia. A chave primária usa `auth.users.id`; não há leitura anônima.
+3. Copiar `.env.example` para `.env.local` e preencher `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` com a URL e chave pública do projeto. Nunca incluir chave `service_role`, chave secreta ou senha do banco no aplicativo.
+4. Cadastrar as mesmas duas variáveis na Vercel e refazer o deploy; o Expo incorpora a configuração ao bundle durante o build.
+5. Configurar a URL do site e o redirecionamento de confirmação de e-mail no painel Auth do Supabase para `https://arena-campeonatos.vercel.app`. Confirmar o cadastro e voltar ao app para entrar com e-mail/senha.
+6. Validar envio/restauração com duas contas e verificar que nenhuma consegue ler a cópia da outra.
+
+A cópia é limitada a 2 MiB; o servidor também impõe limite sobre a representação JSONB. Alterações locais posteriores exigem um novo envio. Os testes do payload cobrem validação, tamanho UTF-8 e remoção de identificadores de notificações; não substituem testes do serviço remoto.
+
+Validação desta integração: 14 testes unitários aprovados, TypeScript e ESLint aprovados, export web aprovado, fluxo E2E com cinco participantes e quatro partidas aprovado sem erros de runtime. Tela de backup pendente validada em desktop (1366 px) e mobile (430 px). O teste remoto do banco permanece pendente do provisionamento.
