@@ -60,6 +60,19 @@ test('cross-origin cookie mutations rejected, invalid payload never overwrites',
   assert.equal(validToken('a\nb'), false);
   assert.equal(validToken('x'.repeat(8193)), false);
 });
+test('stale account shown in another tab cannot read or replace current account backup', async () => {
+  const f = fixture();
+  const existing = { payload: [], schema_version: 1, updated_at: '2026-11-12T00:00:00.000Z' };
+  f.rows.set('b', existing);
+  const read = await f.request('backup', 'signed-b', undefined, { 'x-arena-user': 'a' });
+  assert.equal(read.status, 409);
+  assert.match((await read.json()).error, /Sua conta mudou em outra aba/);
+  const write = await f.request('backup', 'signed-b', { payload: [] }, { 'x-arena-user': 'a' });
+  assert.equal(write.status, 409);
+  assert.equal(f.rows.get('b'), existing);
+  assert.equal(f.rows.has('a'), false);
+  assert.equal((await f.request('backup', 'signed-b', undefined, { 'x-arena-user': 'b' })).status, 200);
+});
 test('signout revokes upstream and clears browser cookie; service errors do not leak internals', async () => {
   const f = fixture();
   const response = await f.request('signout', 'signed-a', {});

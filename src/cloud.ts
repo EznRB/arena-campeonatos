@@ -8,6 +8,7 @@ export type CloudSession = { user: CloudUser };
 const endpoint = process.env.EXPO_PUBLIC_ARENA_API_URL?.trim();
 export const cloudConfigured = !!endpoint && /^https:\/\//.test(endpoint);
 const sessionKey = "arena.neon.session.v1";
+let currentUserId: string | undefined;
 
 async function request(action: string, body?: unknown): Promise<Record<string, unknown>> {
   if (!cloudConfigured) throw new Error("O backup online ainda não está configurado.");
@@ -22,6 +23,7 @@ async function request(action: string, body?: unknown): Promise<Record<string, u
       headers: {
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...(native ? { "X-Arena-Client": "native" } : {}),
+        ...(action === "backup" && currentUserId ? { "X-Arena-User": currentUserId } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -43,8 +45,9 @@ async function request(action: string, body?: unknown): Promise<Record<string, u
 
 function sessionFrom(data: Record<string, unknown>): CloudSession | null {
   const user = data.user as CloudUser | null;
-  if (!user) return null;
+  if (!user) { currentUserId = undefined; return null; }
   if (typeof user.id !== "string" || typeof user.email !== "string") throw new Error("Resposta de sessão inválida.");
+  currentUserId = user.id;
   return { user };
 }
 
@@ -62,6 +65,7 @@ export async function authenticateCloud(email: string, password: string, create:
 
 export async function signOutCloud(): Promise<void> {
   await request("signout", {});
+  currentUserId = undefined;
   if (Platform.OS !== "web") await SecureStore.deleteItemAsync(sessionKey);
 }
 

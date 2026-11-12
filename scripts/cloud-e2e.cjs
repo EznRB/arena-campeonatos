@@ -80,6 +80,17 @@ const pass = name => { evidence.checks.push(name); console.log('PASS', name); };
     assert.equal((await browserAPI(page, 'backup', { payload: [], user_id: sessionA.body.user.id })).status, 200);
     assert.deepEqual((await browserAPI(page, 'backup')).body.backup.payload, []);
     pass('Account B starts empty; forged owner field cannot overwrite A');
+    const staleTab = await page.evaluate(async ({ base, userId }) => {
+      const results = [];
+      for (const method of ['GET', 'POST']) {
+        const response = await fetch(base + '/api/arena?action=backup', { method, headers: { 'X-Arena-User': userId, 'Content-Type': 'application/json' }, ...(method === 'POST' ? { body: JSON.stringify({ payload: [] }) } : {}) });
+        results.push({ status: response.status, body: await response.json() });
+      }
+      return results;
+    }, { base, userId: sessionA.body.user.id });
+    assert.deepEqual(staleTab.map(item => item.status), [409, 409]);
+    assert.deepEqual((await browserAPI(page, 'backup')).body.backup.payload, []);
+    pass('Stale account A tab cannot read/write account B backup after shared-cookie account switch');
     await page.getByRole('button', { name: 'Sair da conta', exact: true }).click();
     await page.getByLabel('E-mail da conta', { exact: true }).waitFor();
     const mobileContext = await browser.newContext({ viewport: { width: 430, height: 932 }, isMobile: true, hasTouch: true });

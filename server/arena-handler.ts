@@ -66,6 +66,8 @@ export function createHandler(deps: Dependencies, config: Config) {
         return reply(200, { ok: true });
       }
       if (!user) return reply(401, { error: 'Entre na sua conta para continuar.' });
+      const expectedUser = request.headers.get('x-arena-user');
+      if (action === 'backup' && expectedUser && expectedUser !== user.id) return reply(409, { error: 'Sua conta mudou em outra aba. Recarregue a tela antes de continuar.' });
       if (action === 'signout') {
         const result = await deps.auth('/sign-out', 'POST', session?.token && validToken(session.token) ? session.token : token, {});
         if (result.status >= 400) return reply(502, { error: 'Não foi possível encerrar a sessão. Tente novamente.' });
