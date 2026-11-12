@@ -1,6 +1,6 @@
 # Arena - matriz da avaliação e QA
 
-Aplicativo original em React Native, Expo, TypeScript e Expo Router para torneios presenciais de eliminação simples com 4 a 16 participantes. Um organizador conduz o evento em seu aparelho, sem backend. Prazo do enunciado: **07 de dezembro, às 23h59**; confirmar o ano com o professor.
+Aplicativo original em React Native, Expo, TypeScript e Expo Router para torneios presenciais de eliminação simples com 4 a 16 participantes. Um organizador conduz o evento no aparelho; conta Neon e backup manual via API Vercel são opcionais. O fluxo principal permanece local e offline. Prazo do enunciado: **07 de dezembro, às 23h59**; confirmar o ano com o professor.
 
 ## Cobertura da rubrica
 
@@ -83,4 +83,21 @@ Para notificações, testar com horário futuro próximo suportado pela interfac
 
 ## Limitações a declarar
 
-Não há sincronização, login, pagamentos, chat, ligas ou vários organizadores simultâneos. Desinstalar/limpar dados pode eliminar campeonatos. AsyncStorage não é cofre criptografado. Compartilhar um resumo não transfere gestão do torneio. O sorteio não possui certificação de auditoria competitiva. QR é identificador local, sem autenticação. Demonstrações físicas e participação da equipe dependem de validação humana real.
+Há login opcional e backup manual; não há sincronização automática, merge, pagamentos, chat, ligas ou vários organizadores simultâneos. Desinstalar/limpar dados pode eliminar campeonatos. AsyncStorage não é cofre criptografado. Compartilhar um resumo não transfere gestão do torneio. O sorteio não possui certificação de auditoria competitiva. QR é identificador local, sem autenticação. Demonstrações físicas e participação da equipe dependem de validação humana real.
+
+
+## Complemento Neon/API - 12/11/2026
+
+Testes locais desta integração: 25 unitários aprovados, TypeScript de cliente e servidor aprovado, lint src/server/api aprovado e export web aprovado. Migração remota aplicada, tabela privada `public.arena_backups` com RLS habilitada e zero registros antes do QA. O QA real em produção passou com duas contas, restauração em outro navegador e tentativas de acesso cruzado recusadas. Ver NEON.md para evidências finais. Resultados antigos de exportações nativas não validam a sessão SecureStore em dispositivo.
+
+Complemento de QA: fluxos web e contrato da API exercitados; os itens físicos permanecem pendentes:
+
+| ID | Ação | Resultado esperado |
+| --- | --- | --- |
+| QA-21 | Criar conta, entrar, sair e tentar operação protegida sem sessão | Senha mínima de oito caracteres; operação sem sessão recusada; dados locais permanecem |
+| QA-22 | Duas contas distintas enviam/restauram cópias diferentes; tentar indicar outro proprietário | Cada conta acessa somente sua cópia; servidor deriva owner da sessão |
+| QA-23 | Enviar payload inválido/acima de 2 MiB e restaurar cópia válida | Inválidos rejeitados; restauração confirmada substitui lista; IDs de notificações removidos |
+| QA-24 | Ficar offline e usar torneio; depois reenviar backup com rede | Fluxo central funciona; backup exige rede, sem sincronização automática |
+| QA-25 | Verificar sessão no navegador e em aparelho nativo | Cookie HttpOnly/Secure/SameSite=Lax na web; SecureStore + Bearer assinado no nativo; sem token no AsyncStorage |
+
+Confirmação de e-mail está desabilitada: cadastro não verifica posse do endereço. Interface sem recuperação de senha/OTP; conta válida e cópia enviada são necessárias para restauração. O PDF foi regenerado e revisado visualmente.

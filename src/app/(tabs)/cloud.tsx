@@ -4,6 +4,7 @@ import type { CloudSession } from '../../cloud';
 import { authenticateCloud, cloudConfigured, getCloudSession, loadCloudBackup, saveCloudBackup, signOutCloud } from '../../cloud';
 import { useTournaments } from '../../store';
 import { cancelReminder } from '../../native';
+import { restoreBackup } from '../../restore-backup';
 import { Button, Card, colors, confirmAction, Field, Heading, Loading, Screen, styles } from '../../components/ui';
 import { Icon } from '../../components/icon';
 
@@ -50,9 +51,8 @@ export default function CloudScreen() {
       const backup = await perform(loadCloudBackup);
       if (!backup) { if (backup === null) setMessage('Esta conta ainda não tem backup. Salve seus campeonatos primeiro.'); return; }
       confirmAction('Substituir campeonatos locais?', `O backup de ${new Date(backup.updatedAt).toLocaleString('pt-BR')} tem ${backup.tournaments.length} campeonato(s). Ele substituirá a lista deste aparelho. Lembretes locais serão cancelados e precisam ser reagendados.`, () => void perform(async () => {
-        await Promise.all(tournaments.flatMap(item => item.notificationId ? [cancelReminder(item.notificationId)] : []));
-        await update(() => backup.tournaments);
-        setMessage('Backup restaurado neste aparelho. Reagende os lembretes que quiser receber.');
+        const failures = await restoreBackup(backup.tournaments, tournaments, value => update(() => value), cancelReminder);
+        setMessage(failures ? `Backup restaurado, mas ${failures} lembrete(s) antigo(s) não puderam ser cancelados. Reagende os novos lembretes com cuidado.` : 'Backup restaurado neste aparelho. Reagende os lembretes que quiser receber.');
       }));
   }
   return <Screen maxWidth={900}>

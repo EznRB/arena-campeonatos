@@ -6,7 +6,7 @@
 **Turma/semestre:** preencher  
 **Professor(a):** preencher  
 **Equipe:** preencher  
-**Versão:** 10/11/2026
+**Base:** 10/11/2026; atualização de backend em 12/11/2026
 
 Aplicativo acadêmico em React Native com Expo e TypeScript. Os campos pendentes precisam ser completados pela equipe com fatos. Não representam entrevistas realizadas, testes físicos aprovados ou participação comprovada. O PDF deve ser atualizado após a revisão final.
 
@@ -36,7 +36,7 @@ O projeto é uma camada mobile original, sem encapsular site e sem reutilizar ap
 
 ### Escopo e limites
 
-Um organizador e um aparelho conduzem cada torneio. O formato é eliminação simples, com byes para quantidades fora de potências de dois e vencedor explícito em empate. Não há backend, sincronização, pagamentos, chat, ligas ou múltiplos gestores simultâneos. QR identifica um registro local; não prova identidade. Resultado compartilhado não sincroniza campeonatos entre celulares.
+Um organizador e um aparelho conduzem cada torneio. O formato é eliminação simples, com byes para quantidades fora de potências de dois e vencedor explícito em empate. Conta e backup manual opcionais usam Neon Auth gerenciado e API Vercel. Não há sincronização automática, merge, pagamentos, chat, ligas ou múltiplos gestores simultâneos. QR identifica um registro local; não prova identidade. Resultado compartilhado não sincroniza campeonatos entre celulares.
 
 ## 2. O grupo de desenvolvimento
 
@@ -64,7 +64,7 @@ R = executa; A = responde pela entrega; C = consultado; I = informado. Substitui
 | Câmera, QR e integrações nativas | C | R | A | C |
 | QA físico, README, benchmark e PDF | C | C | C | R/A |
 
-Não há API remota ou banco servidor: a responsabilidade de dados cobre AsyncStorage, validação, hidratação e gravações locais.
+A responsabilidade de dados cobre AsyncStorage, validação, hidratação e gravações locais, além de autenticação, autorização por sessão e SQL privado para backup opcional. Atribuir responsáveis reais também por essa integração.
 
 ### Organização da squad
 
@@ -163,3 +163,32 @@ Convidar colegas, com consentimento, a criar um torneio, conferir presença, inf
 ## Preparação da versão final
 
 Preencher equipe e papéis reais; incorporar incidentes comprovados; complementar críticas recentes nas lojas; executar QA físico; inserir evidências no README; revisar e exportar novamente o PDF. A organização do código e as verificações automatizadas apoiam a qualidade, mas não substituem demonstração nativa e domínio técnico dos integrantes.
+
+
+## Atualização dos pilares: backend opcional - 12/11/2026
+
+**Motivação:** permitir guardar e recuperar manualmente uma cópia do campeonato com conta, preservando uso local sem login. Não é colaboração simultânea nem sincronização entre aparelhos.
+
+**Grupo:** a matriz proposta deve incluir responsável real por API Vercel, Neon Auth, migração SQL e QA de isolamento; não atribuir autoria fictícia. O plugin/skill Neon foi consultado, com MCP OAuth de projeto sem segredos literais.
+
+**Desafio técnico adicional:** separar credenciais de servidor do cliente e impedir acesso cruzado entre contas. A API `/api/arena` valida sessão Neon Auth em cada operação protegida e usa exclusivamente o usuário da sessão como proprietário. Web usa cookie assinado HttpOnly/Secure/SameSite=Lax; nativo usa SecureStore e Bearer assinado. AsyncStorage continua apenas para dados locais, não sessão. Backup validado limitado a 2 MiB, com IDs de notificações removidos.
+
+**Infraestrutura:** projeto Neon exclusivo `fragrant-hill-82542920`, branch `br-wandering-wind-bebhk06j`, plano Free, `aws-us-east-2`. Migração `database/migrations/001_arena_backups.sql` aplicada; tabela `public.arena_backups` privada, RLS habilitada, acesso SQL somente no servidor, sem Data API. Verificação antes do QA encontrou zero linhas. Configurações secretas de servidor não são embarcadas no app. Projetos não relacionados ficaram fora do escopo.
+
+**Verificação atual:** 25 testes unitários aprovados (16 de domínio, demonstração, payload e restauração; nove de servidor: oito de handler e um de adaptador), TypeScript cliente/servidor, lint src/server/api e exportações web, Android e iOS aprovados. Exportações nativas atuais: logs/neon-native-export.log; não equivalem a teste em aparelho.
+
+O parser lazy da Vercel rejeitava JSON malformado antes do handler, levando o adaptador a responder 503; a correção retorna JSON seguro com status 400 e possui teste de regressão em tests/api.test.ts. A validação HTTP em produção aprovou JSON malformado 400, payload excessivo 413, acesso anônimo 401 e método inválido 405; os 12 casos remotos também foram repetidos com aprovação. Evidências em NEON.md.
+
+A restauração persiste os dados antes de cancelar lembretes antigos. Dois testes puros verificam que falha de escrita preserva os alarmes e que falhas de limpeza são coletadas com allSettled, gerando aviso sem desfazer os dados persistidos. A revisão independente confirmou as correções.
+
+A migração 002 amplia a guarda de armazenamento JSONB para 4 MiB; o limite compacto da API continua 2 MiB. O teste remoto de fronteira gravou/leu 10.036 torneios draft válidos: 2.096.451 bytes compactos e 2.277.098 bytes em JSONB, dimensão que a guarda antiga rejeitaria. A cópia original de teste foi preservada e restaurada ao final; não se afirma alteração de dados de terceiros. Evidências em NEON.md.
+
+**QA remoto comprovado:** 12 verificações aprovadas em produção em 12/11/2026 (logs/neon-cloud-e2e.log e logs/cloud-e2e-result.json; versão e deploy finais em NEON.md): cadastro e sessão após reload, cookie HttpOnly/Secure/SameSite sem token JSON no navegador, envio pela interface, logout com recusa 401, segunda conta inicialmente sem backup, proprietário forjado ignorado, conflito de conta esperada 409 em leitura/escrita, senha incorreta com erro, restauração em navegador mobile com persistência, payload inválido 400 sem destruir cópia, proteção CSRF 403 e sessão Bearer com revogação 401. O backup da primeira conta permaneceu inalterado e não houve erros de runtime. Bearer exercitado por requisições de teste não comprova SecureStore em aparelho físico.
+
+**Offline e navegação:** o carregamento lazy padrão do Expo Router no bundle web impedia a primeira navegação sem rede. A configuração asyncRoutes foi desativada; o fluxo local completo de cinco participantes e quatro partidas até o campeão, seguido de reconexão/reload e recuperação de corrupção, passou em logs/neon-offline-e2e.log. Na web é necessário abrir a página inicialmente online; não há service worker nem garantia de recarregamento completo offline. A aplicação está publicada em https://arena-campeonatos.vercel.app; o estado final do deploy com as últimas correções deve ser consultado em NEON.md. A repetição dos 12 casos remotos e o fluxo offline completo de cinco participantes/quatro partidas até o campeão, com reconexão/reload e recuperação de corrupção, passaram em produção (logs/neon-production-offline.log). CI e identificação da implantação verificada constam em NEON.md. Auditoria atual: oito avisos moderados, nenhum alto ou crítico. Evidências finais em NEON.md. Hardware e sessão nativa em dispositivo físico permanecem pendentes.
+
+**Limitações de conta:** senha mínima de oito caracteres; confirmação de e-mail desabilitada, portanto cadastro não prova posse do endereço. Não há recuperação de senha nem OTP na interface atual. Restauração exige rede/conta válida, confirmação e substituição integral dos dados locais; não há merge automático.
+
+**Benchmark:** o novo backup é conveniência adicional do Arena, sem alegar exclusividade ou superioridade perante os concorrentes pesquisados. As fontes e limites da pesquisa de mercado permanecem os mesmos.
+
+**Documentação e evidências:** este conteúdo serve de fonte para a geração do PDF acadêmico. Consulte NEON.md e VERIFICACAO.md para o estado final das implantações e evidências atualizadas.

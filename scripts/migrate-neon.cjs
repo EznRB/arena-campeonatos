@@ -13,9 +13,10 @@ const { neon } = require('@neondatabase/serverless');
     throw new Error('Configure o banco Neon do Arena em .env.local ou ARENA_MIGRATION_DATABASE_URL.');
   }
   const sql = neon(connection);
-  const file = path.resolve(__dirname, '../database/migrations/001_arena_backups.sql');
-  // This initial migration contains only plain statements, one per line/block.
-  const statements = fs.readFileSync(file, 'utf8').split(/;\s*(?:\r?\n|$)/).map(value => value.trim()).filter(Boolean);
+  const directory = path.resolve(__dirname, '../database/migrations');
+  const files = fs.readdirSync(directory).filter(name => /^\d+.*\.sql$/.test(name)).sort();
+  // These migrations contain only plain statements, one per line/block.
+  const statements = files.flatMap(name => fs.readFileSync(path.join(directory, name), 'utf8').split(/;\s*(?:\r?\n|$)/).map(value => value.trim()).filter(Boolean));
   await sql.transaction(statements.map(statement => sql.query(statement)));
   const rows = await sql`SELECT relrowsecurity FROM pg_class WHERE oid = 'public.arena_backups'::regclass`;
   if (!rows[0]?.relrowsecurity) throw new Error('A verificação de RLS falhou.');

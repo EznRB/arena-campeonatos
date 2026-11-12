@@ -137,13 +137,16 @@ src/
   store.tsx            Contexto, hidratação e fila de persistência
   use-tournament.ts    Custom hook de seleção por rota
   native.ts            Notificações e haptics
-tests/                 Testes de domínio
+server/                Autenticação, autorização e backup no servidor
+api/                   Handler Vercel /api/arena
+database/migrations/   Migração SQL do backup privado
+tests/                 Testes de domínio, payload e backend
 scripts/               Prévia SPA e teste real de interface
 docs/                  Plano, rubrica, quatro pilares e capturas
 output/pdf/            Documento acadêmico
 ```
 
-Sem backend, chaves secretas ou variáveis de ambiente para o fluxo principal. Hooks usados: `useState`, `useEffect` com cleanup, `useRef`, `useCallback`, `useContext` e custom hooks. Listas usam `FlatList`. Componentes de texto usam `Text`.
+O fluxo principal usa dados locais e funciona sem conta. O backup opcional usa Neon Auth gerenciado e uma API própria na Vercel (`/api/arena`), com credenciais de banco apenas no servidor. Hooks usados: `useState`, `useEffect` com cleanup, `useRef`, `useCallback`, `useContext` e custom hooks. Listas usam `FlatList`. Componentes de texto usam `Text`.
 
 ## Dependências
 
@@ -152,7 +155,8 @@ As versões exatas estão em [package-lock.json](package-lock.json); as declarad
 - **Base:** `expo`, `react`, `react-native`, `typescript`, `@types/react`.
 - **Navegação:** `expo-router`, `expo-linking`, `expo-constants`, `react-native-screens`, `react-native-safe-area-context`.
 - **Mobile:** `expo-camera`, `expo-crypto`, `expo-haptics`, `expo-notifications`, `expo-sharing`, `expo-status-bar`.
-- **Persistência:** `@react-native-async-storage/async-storage`.
+- **Persistência local:** `@react-native-async-storage/async-storage`.
+- **Conta e servidor:** `expo-secure-store`, `@neondatabase/serverless`; tipos de funções Vercel em `@vercel/node`.
 - **Cartões:** `react-native-qrcode-svg`, `react-native-svg`, `react-native-view-shot`.
 - **Web:** `react-dom`, `react-native-web`.
 - **Identidade visual:** `expo-font`, `@expo-google-fonts/inter`, `@expo-google-fonts/barlow-condensed`, `lucide-react-native`.
@@ -162,7 +166,7 @@ As versões exatas estão em [package-lock.json](package-lock.json); as declarad
 
 Consulte [VERIFICACAO.md](docs/VERIFICACAO.md) para resultados executados, limitações e avisos de dependências. O workflow `.github/workflows/ci.yml` executa as verificações a cada push; consulte o resultado remoto na aba Actions do repositório.
 
-Os dados ficam neste dispositivo/navegador. Desinstalar, limpar dados do aplicativo ou armazenamento do navegador remove os campeonatos. O backup online é manual e opcional; depende da configuração Supabase descrita abaixo. Não há sincronização automática. Dados corrompidos não são substituídos silenciosamente por uma lista vazia: a edição fica bloqueada e o conteúdo original é preservado.
+Os dados ficam neste dispositivo/navegador. Desinstalar, limpar dados do aplicativo ou armazenamento do navegador remove os campeonatos. O backup online é manual e opcional; usa a configuração Neon/API descrita abaixo. Não há sincronização automática. Dados corrompidos não são substituídos silenciosamente por uma lista vazia: a edição fica bloqueada e o conteúdo original é preservado.
 
 ## Entrega acadêmica e equipe
 
@@ -195,19 +199,38 @@ Fontes: [Expo](https://github.com/expo/expo), [Expo Skills](https://github.com/e
 
 ## Conta e backup online
 
-A tela **Conta e backup** permite cadastro por e-mail/senha, entrada, envio e restauração de uma cópia dos torneios. O fluxo local permanece disponível sem conta. Não há sincronização automática nem combinação de listas. Restaurar exige confirmação, substitui os torneios locais e não transfere notificações de outro aparelho.
+A tela **Conta e backup** permite cadastro por e-mail/senha, entrada, envio e restauração manual de uma cópia dos torneios. O fluxo local funciona sem conta e sem internet. Restaurar exige confirmação e substitui os torneios locais; não combina listas nem sincroniza alterações automaticamente. Identificadores de notificações são removidos do payload validado: restaurar não transfere os lembretes de outro aparelho.
 
-**Provisionamento pendente:** a criação do projeto Supabase aguarda a escolha da organização pelo proprietário. A interface informa essa condição enquanto as variáveis estiverem ausentes. A migração está preparada, mas ainda não foi aplicada a um banco remoto; autenticação e backup reais ainda precisam de validação após o provisionamento.
+### Infraestrutura e configuração
 
-Configuração:
+O projeto Neon exclusivo do Arena já foi provisionado: `fragrant-hill-82542920`, branch `br-wandering-wind-bebhk06j`, plano Free, região `aws-us-east-2`. Projetos não relacionados permanecem fora do escopo. As migrações `database/migrations/001_arena_backups.sql` e `002_jsonb_storage_margin.sql` foram aplicadas ao banco remoto; a tabela `public.arena_backups` foi verificada com RLS habilitada e zero linhas antes do QA. Ela é privada, acessada por SQL somente no servidor, sem exposição pela Data API.
 
-1. Criar um projeto Supabase exclusivo para Arena na organização autorizada.
-2. Aplicar `supabase/migrations/20261112171550_arena_cloud_backups.sql`. A tabela possui RLS: cada usuário autenticado pode acessar apenas sua própria cópia. A chave primária usa `auth.users.id`; não há leitura anônima.
-3. Copiar `.env.example` para `.env.local` e preencher `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` com a URL e chave pública do projeto. Nunca incluir chave `service_role`, chave secreta ou senha do banco no aplicativo.
-4. Cadastrar as mesmas duas variáveis na Vercel e refazer o deploy; o Expo incorpora a configuração ao bundle durante o build.
-5. Configurar a URL do site e o redirecionamento de confirmação de e-mail no painel Auth do Supabase para `https://arena-campeonatos.vercel.app`. Confirmar o cadastro e voltar ao app para entrar com e-mail/senha.
-6. Validar envio/restauração com duas contas e verificar que nenhuma consegue ler a cópia da outra.
+1. Executar `npm ci` com Node 24. Copiar `.env.example` para `.env.local` e manter apenas a configuração pública necessária ao cliente:
 
-A cópia é limitada a 2 MiB; o servidor também impõe limite sobre a representação JSONB. Alterações locais posteriores exigem um novo envio. Os testes do payload cobrem validação, tamanho UTF-8 e remoção de identificadores de notificações; não substituem testes do serviço remoto.
+   ```dotenv
+   EXPO_PUBLIC_ARENA_API_URL=https://arena-campeonatos.vercel.app/api/arena
+   ```
 
-Validação desta integração: 14 testes unitários aprovados, TypeScript e ESLint aprovados, export web aprovado, fluxo E2E com cinco participantes e quatro partidas aprovado sem erros de runtime. Tela de backup pendente validada em desktop (1366 px) e mobile (430 px). O teste remoto do banco permanece pendente do provisionamento.
+2. No ambiente do servidor Vercel, configurar `DATABASE_URL`, `NEON_AUTH_BASE_URL` e `ARENA_ORIGIN`. A origem de produção é `https://arena-campeonatos.vercel.app`. Usar os valores privados do projeto autorizado; não inserir credenciais em código, screenshots, logs públicos ou variáveis `EXPO_PUBLIC_*`. O cliente recebe apenas a URL pública da API.
+3. Em nova instalação de infraestrutura, executar `node scripts/migrate-neon.cjs` com a conexão correta em `.env.local` e verificar tabela/RLS. No projeto indicado, essa etapa já foi executada; não criar outro banco nem modificar projetos não relacionados.
+4. Refazer a exportação/deploy quando mudar a URL pública. `npm run preview` serve a SPA local e não emula o handler Vercel. Para QA de conta, usar uma API implantada/configurada e uma origem aceita pelo servidor; não liberar origens indiscriminadamente para contornar configuração.
+5. Executar `npm test`, `npm run typecheck` (cliente e servidor), `npm run lint` (`src`, `server` e `api`) e `npx expo export --platform web`.
+6. Antes de declarar pronto em produção, validar cadastro/entrada, envio/restauração, logout e isolamento entre duas contas na implantação final. Estado e evidências finais: [NEON.md](docs/NEON.md).
+
+### Sessão e autorização
+
+A API valida a sessão Neon Auth em cada requisição protegida e obtém o proprietário exclusivamente do usuário autenticado; um ID enviado pelo cliente não concede acesso a outro backup. RLS permanece habilitada como defesa adicional, mas não substitui a autorização da API.
+
+No navegador, a sessão usa cookie assinado `HttpOnly`, `Secure` e `SameSite=Lax`. No aplicativo nativo, a sessão assinada fica no Expo SecureStore e é enviada como Bearer; credenciais de sessão não ficam no AsyncStorage. A conexão SQL e a URL interna de Auth são configurações do servidor, nunca segredos embarcados no bundle.
+
+Cadastro usa e-mail/senha, com mínimo de oito caracteres. A confirmação de e-mail está desabilitada na configuração gerenciada atual; portanto, o cadastro não comprova posse do endereço. A interface atual não oferece recuperação de senha nem fluxo OTP. Não use uma conta de avaliação como único meio de recuperar dados importantes.
+
+O backup aceita até 2 MiB, com validação antes de gravar/restaurar. Alterações posteriores exigem novo envio. Desinstalar ou limpar dados locais perde campeonatos que não tenham uma cópia enviada; restaurar depende de rede e conta válida.
+
+### Estado da verificação em 12/11/2026
+
+25 testes unitários aprovados (nove de servidor e 16 de domínio/demo/payload/restauração), TypeScript de cliente/servidor, lint de `src/server/api` e exportação web aprovados. O provisionamento e a migração remota foram verificados. **Deploy e QA em produção com duas contas aprovados, incluindo restauração e isolamento.** Consulte [NEON.md](docs/NEON.md) e [VERIFICACAO.md](docs/VERIFICACAO.md) para atualização das evidências. Exportações atuais de Android/iOS aprovadas; não comprovam execução em aparelho físico. Câmera, notificações, haptics e sessão nativa ainda exigem QA físico.
+
+O plugin/skill Neon foi consultado para o backend. A conexão MCP usa OAuth na configuração de projeto `.codex/config.toml`; o arquivo não deve conter senhas ou tokens literais.
+
+Roteiro de produção: `node scripts/cloud-e2e.cjs`. Para conferir o torneio offline após a abertura inicial, defina `BASE_URL`, `OFFLINE=1` e `CAPTURE_SCREENSHOTS=0` ao executar `node scripts/e2e.cjs`. Na web, abrir inicialmente a página requer rede; hard reload offline não é garantido.

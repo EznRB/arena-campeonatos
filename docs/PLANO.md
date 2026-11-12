@@ -8,7 +8,7 @@ Autorização: execução contínua solicitada pelo usuário. Arena adotado pela
 ## Escopo fechado
 Criar torneios com nome, modalidade, local e horário; gerenciar participantes antes do início; cartões QR para check-in; sorteio persistido; byes para números não potência de dois; placares e desempate explícito; correções bloqueadas quando fase dependente já foi disputada; campeão e compartilhamento; lembrete local; haptics; armazenamento local validado.
 
-Sem pagamentos, backend, chat, múltiplos organizadores simultâneos ou ligas. QR identifica registro local, não autentica identidade. Resultados sem conexão não sincronizam com outros aparelhos.
+Sem pagamentos, chat, múltiplos organizadores simultâneos ou ligas. Desde 12/11, há backend opcional Neon Auth + API Vercel para conta e backup manual, sem alterar o fluxo local offline. QR identifica registro local, não autentica identidade. Resultados sem conexão não sincronizam com outros aparelhos.
 
 ## Arquitetura e arquivos
 - `src/domain.ts`: tipos e regras puras, validação de persistência, sorteio, byes, resultados e QR.
@@ -40,5 +40,16 @@ Caveman para comunicação objetiva; Ponytail para menor implementação complet
 ## Limites da conclusão
 Não alegar câmera, notificações ou haptics testados fisicamente sem aparelho. Nomes, matrículas, perfis GitHub, acesso do professor e contribuição real da equipe dependem dos alunos. Documento deve distinguir implementação, verificação automatizada e validação física pendente.
 
-## Checkpoint final
+## Checkpoint histórico final
 Versão local implementada. 8 testes de domínio, E2E com cinco participantes/quatro partidas, persistência e recuperação de corrupção aprovados. TypeScript, lint, Expo Doctor 20/20 e exportação das três plataformas aprovados. Metro iniciou e prévia web disponível em localhost:4173 durante esta sessão. Veja `VERIFICACAO.md` para evidências e 10 avisos moderados transitivos. Próximo passo externo: QA físico, dados reais do grupo e publicação do GitHub.
+
+
+## Atualização de escopo - 12/11/2026: Neon
+
+Conta opcional e backup manual de até 2 MiB via `/api/arena` na Vercel, Neon Auth gerenciado e SQL privado. Sem sincronização automática ou merge; payload validado remove IDs de notificações. Sessão web por cookie assinado HttpOnly/Secure/SameSite=Lax; nativa por SecureStore + Bearer assinado, sem AsyncStorage para autenticação. Proprietário derivado somente da sessão validada no servidor.
+
+Projeto exclusivo `fragrant-hill-82542920`, branch `br-wandering-wind-bebhk06j`, Free, `aws-us-east-2`. Migrações `001_arena_backups.sql` e `002_jsonb_storage_margin.sql` aplicadas; `public.arena_backups` com RLS habilitada, zero linhas antes do QA, sem Data API. Projetos não relacionados não foram alterados. Backend anterior pendente foi substituído; não há dependência Supabase.
+
+Configuração pública: `EXPO_PUBLIC_ARENA_API_URL`. Segredos/configuração de servidor: `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `ARENA_ORIGIN`; nunca no bundle. Autenticação e-mail/senha mínima de oito caracteres, confirmação de e-mail desabilitada; recuperação de senha/OTP não disponíveis na interface.
+
+Verificações desta integração: 25 testes unitários, TypeScript cliente/servidor, lint src/server/api e exportação web aprovados. Deploy e QA remoto com duas contas aprovados, incluindo isolamento e restauração em outro navegador; sessão nativa e hardware exigem QA físico. Consulte NEON.md e VERIFICACAO.md. O PDF foi regenerado para incorporar este escopo.

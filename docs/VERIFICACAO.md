@@ -1,6 +1,26 @@
+# Atualização de verificação - Neon/API - 12/11/2026
+
+| Verificação da integração | Resultado registrado |
+| --- | --- |
+| Unitários | 25 aprovados: nove de servidor e 16 de domínio/demo/payload/restauração |
+| TypeScript | Cliente e servidor aprovados (`npm run typecheck`) |
+| ESLint | src, server e api aprovados (`npm run lint`) |
+| Exportação web | Aprovada |
+| Banco remoto | Migrações `001_arena_backups.sql` e `002_jsonb_storage_margin.sql` aplicadas; tabela `public.arena_backups`, RLS habilitada, zero linhas antes do QA |
+| Deploy e QA com duas contas | Aprovados em produção; ver NEON.md |
+| Sessão nativa e hardware físico | Pendente de aparelho |
+
+Projeto exclusivo `fragrant-hill-82542920`, branch `br-wandering-wind-bebhk06j`, Free, `aws-us-east-2`. Banco privado acessível por SQL somente no servidor, sem exposição Data API. Projetos não relacionados não foram alterados. A API Vercel `/api/arena` valida sessão Neon Auth e deriva o proprietário apenas da identidade autenticada. Web usa cookie assinado HttpOnly/Secure/SameSite=Lax; nativo usa Expo SecureStore + Bearer assinado, sem AsyncStorage para autenticação.
+
+Backup manual de até 2 MiB, validado e sem IDs de notificações; restauração substitui a lista mediante confirmação, sem merge ou sincronização automática. Fluxo local offline preservado. Confirmação de e-mail desabilitada; interface sem recuperação de senha/OTP. Consultar [NEON.md](NEON.md) para evidências finais e configuração, sem registrar credenciais reais aqui.
+
+As aprovações de exportações Android/iOS e E2E abaixo pertencem a versões anteriores; não provam esta integração em aparelho físico. O PDF foi atualizado para o escopo Neon.
+
+---
+
 # Verificação da versão local
 
-**Atualização de 12/11/2026:** a interface foi reformulada e revalidada. A versão atual tem 10 testes aprovados, TypeScript/lint sem falhas, Expo Doctor 20/20, exportações das três plataformas e E2E/checagem visual aprovados. Veja o [registro da reformulação](REDESIGN.md). O conteúdo abaixo preserva a verificação histórica de 10/11.
+**Registro histórico da interface (12/11/2026, anterior ao backend Neon):** a interface foi reformulada e revalidada. Naquele registro, havia 10 testes aprovados, TypeScript/lint sem falhas, Expo Doctor 20/20, exportações das três plataformas e E2E/checagem visual aprovados. Veja o [registro da reformulação](REDESIGN.md). O conteúdo abaixo preserva a verificação histórica de 10/11.
 
 Data: 10/11/2026. Resultados locais, não execução do CI remoto. Logs completos preservados em `logs/`, ignorados pelo Git.
 
